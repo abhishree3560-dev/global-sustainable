@@ -23,7 +23,7 @@ function Contact() {
     e.preventDefault();
 
     try {
-      await axios.post("http://localhost:5000/send", formData);
+      await axios.post("https://global-sustainable.onrender.com/send", formData);
       setSuccess(true);
       setFormData({ name: "", email: "", phone: "", message: "" });
     } catch (error) {
