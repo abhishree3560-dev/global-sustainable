@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@popperjs/core": "^2.11.8",
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "emailjs-com": "^3.2.0",
     "express": "^5.2.1",
     "framer-motion": "^12.23.26",
     "mongoose": "^9.1.1",
