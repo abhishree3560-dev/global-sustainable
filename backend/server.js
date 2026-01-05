@@ -7,44 +7,41 @@ import nodemailer from "nodemailer";
 dotenv.config();
 
 const app = express();
+
+/* ✅ FIXED CORS CONFIG */
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5000", // local dev
+      "https://global-sustainable-bx1u.vercel.app/" // vercel
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+
+app.options("*", cors()); // VERY IMPORTANT
+
 app.use(express.json());
 
-// ---------------- CORS FIX ----------------
-const allowedOrigins = [
-  "https://global-sustainable-qmkb.vercel.app"
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS blocked"));
-    }
-  },
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
-}));
-
-app.options("*", cors());
-
-// ---------------- MONGODB ----------------
-mongoose.connect(process.env.MONGO_URI)
+/* ---------------- MONGODB ---------------- */
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err.message));
+  .catch((err) => console.log("❌ MongoDB Error:", err.message));
 
-// ---------------- SCHEMA ----------------
+/* ---------------- SCHEMA ---------------- */
 const messageSchema = new mongoose.Schema({
   name: String,
   email: String,
+  phone: String,
   message: String,
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
 const Message = mongoose.model("Message", messageSchema);
 
-// ---------------- EMAIL ----------------
+/* ---------------- EMAIL SETUP ---------------- */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -53,37 +50,46 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ---------------- API ----------------
+transporter.verify((error) => {
+  if (error) {
+    console.log("❌ Email error:", error.message);
+  } else {
+    console.log("✅ Email ready");
+  }
+});
+
+/* ---------------- API ---------------- */
 app.post("/send", async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const { name, email, phone, message } = req.body;
 
     if (!name || !email || !message) {
-      return res.status(400).json({ success: false });
+      return res.status(400).json({ success: false, msg: "Missing fields" });
     }
 
-    await Message.create({ name, email, message });
+    await Message.create({ name, email, phone, message });
 
-    try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: process.env.ADMIN_EMAIL,
-        subject: "New Contact Message",
-        text: `${name} - ${email} - ${message}`,
-      });
-    } catch (e) {
-      console.log("⚠️ Email failed");
-    }
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.ADMIN_EMAIL,
+      subject: "📩 New Contact Message",
+      html: `
+        <p>Name: ${name}</p>
+        <p>Email: ${email}</p>
+        <p>Phone: ${phone}</p>
+        <p>Message: ${message}</p>
+      `,
+    });
 
-    res.json({ success: true });
-
-  } catch (err) {
-    console.log("❌ Server Error:", err.message);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.log("❌ SERVER ERROR:", error.message);
     res.status(500).json({ success: false });
   }
 });
 
-// ---------------- SERVER ----------------
-app.listen(process.env.PORT, () => {
-  console.log("🚀 Server running");
+/* ---------------- SERVER ---------------- */
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });

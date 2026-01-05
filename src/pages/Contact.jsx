@@ -27,7 +27,7 @@ function Contact() {
 
     try {
       const res = await axios.post(
-        "https://global-sustainable-backend.onrender.com/send",
+       "https://global-sustainable-backend.onrender.com/send",
         formData,
         {
           headers: {
