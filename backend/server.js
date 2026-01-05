@@ -51,48 +51,54 @@ app.post("/send", async (req, res) => {
     const { name, email, message } = req.body;
 
     if (!name || !email || !message) {
-      return res.status(400).json({ success: false });
+      return res.status(400).json({ success: false, message: "All fields required" });
     }
 
-    // Save to DB
+    // ✅ 1. SAVE MESSAGE TO DB (IMPORTANT)
     await Message.create({ name, email, message });
 
-    // 1️⃣ EMAIL TO ADMIN
-    await transporter.sendMail({
-      from: `"Website Contact" <${process.env.EMAIL_USER}>`,
-      to: process.env.ADMIN_EMAIL,
-      replyTo: email,
-      subject: "📩 New Contact Message",
-      html: `
-        <h3>New Message Received</h3>
-        <p><b>Name:</b> ${name}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Message:</b> ${message}</p>
-      `
-    });
+    // ✅ 2. TRY EMAIL (DO NOT BREAK API)
+    try {
+      // Admin email
+      await transporter.sendMail({
+        from: `"Website Contact" <${process.env.EMAIL_USER}>`,
+        to: process.env.ADMIN_EMAIL,
+        replyTo: email,
+        subject: "📩 New Contact Message",
+        html: `
+          <h3>New Message Received</h3>
+          <p><b>Name:</b> ${name}</p>
+          <p><b>Email:</b> ${email}</p>
+          <p><b>Message:</b> ${message}</p>
+        `
+      });
 
-    // 2️⃣ AUTO-REPLY EMAIL TO USER
-    await transporter.sendMail({
-      from: `"Website Support" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "✅ Thank you for contacting us",
-      html: `
-        <h3>Hello ${name},</h3>
-        <p>Thank you for reaching out to us.</p>
-        <p>We have received your message and our team will get back to you shortly.</p>
-        <br/>
-        <p><b>Your Message:</b></p>
-        <p>${message}</p>
-        <br/>
-        <p>Regards,</p>
-        <p><b>SDG Website Team</b></p>
-      `
-    });
+      // Auto-reply to user
+      await transporter.sendMail({
+        from: `"SDG Website" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "✅ Thank you for contacting us",
+        html: `
+          <h3>Hello ${name},</h3>
+          <p>Thank you for contacting us.</p>
+          <p>We received your message and will reply soon.</p>
+          <br/>
+          <p><b>Your Message:</b></p>
+          <p>${message}</p>
+          <br/>
+          <p>Regards,<br/><b>SDG Team</b></p>
+        `
+      });
 
+    } catch (emailError) {
+      console.log("⚠️ Email failed:", emailError.message);
+    }
+
+    // ✅ ALWAYS SEND SUCCESS TO FRONTEND
     res.json({ success: true });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR:", error.message);
+    console.log("❌ Server error:", error.message);
     res.status(500).json({ success: false });
   }
 });
@@ -101,3 +107,4 @@ app.post("/send", async (req, res) => {
 app.listen(process.env.PORT, () => {
   console.log(`🚀 Server running on port ${process.env.PORT}`);
 });
+
