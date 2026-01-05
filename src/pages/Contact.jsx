@@ -1,9 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
 
-
-
-
 function Contact() {
   const [formData, setFormData] = useState({
     name: "",
@@ -12,22 +9,46 @@ function Contact() {
     message: "",
   });
 
-
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setSuccess(false);
+    setError("");
+
     try {
-      await axios.post("https://global-sustainable.onrender.com/send", formData);
-      setSuccess(true);
-      setFormData({ name: "", email: "", phone: "", message: "" });
-    } catch (error) {
-      alert("Failed to send message");
+      const res = await axios.post(
+        "https://global-sustainable-backend.onrender.com/send",
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      if (res.data.success) {
+        setSuccess(true);
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          message: ""
+        });
+      } else {
+        setError("Message not sent ❌");
+      }
+    } catch (err) {
+      setError("Server error ❌ Please try again later");
     }
   };
 
@@ -93,16 +114,21 @@ function Contact() {
               </p>
             )}
 
+            {error && (
+              <p className="text-danger fw-bold">
+                ❌ {error}
+              </p>
+            )}
+
             <button className="btn btn-success w-100">
               Send Message
             </button>
           </form>
         </div>
 
-        {/* RIGHT SIDE - INFO BOX */}
+        {/* RIGHT SIDE - INFO */}
         <div className="col-md-6 ps-4 mt-4 mt-md-0">
           <div className="contact-info p-5 text-white rounded shadow">
-               
             <h4 className="text-center mb-3">🌍 Get in Touch</h4>
             <p className="text-center">
               Let’s work together for a sustainable future.
@@ -111,9 +137,9 @@ function Contact() {
             </p>
             <hr />
             <center>
-            <p>📍 Tamil Nadu, India</p>
-            <p>📧 infosustainable.org</p>
-            <p>📞 +91 98765 XXXXX</p>
+              <p>📍 Tamil Nadu, India</p>
+              <p>📧 info@sustainable.org</p>
+              <p>📞 +91 98765 XXXXX</p>
             </center>
           </div>
         </div>
